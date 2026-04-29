@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ViewMode } from '../types';
 import { Icons as IconSet } from '../constants';
 
@@ -12,7 +13,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, tokenUsage, onInstall, canInstall, onLogout }) => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navItems: { id: ViewMode; label: string; icon: React.FC }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: IconSet.Gavel },
@@ -28,9 +29,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, tokenUsage
   };
 
   return (
-    <>
     <div className="w-full md:w-20 lg:w-64 bg-legal-900 text-legal-50 flex flex-row md:flex-col justify-between h-16 md:h-screen shrink-0 border-t md:border-t-0 md:border-r border-legal-800 z-50 pb-safe md:pb-0">
-      <div className="flex-1 md:flex-none flex flex-row items-center justify-between px-4 w-full h-full md:h-auto overflow-hidden">
+      <div className="flex-1 md:flex-none flex flex-row md:flex-col w-full h-full md:h-auto overflow-hidden">
         <div className="hidden md:flex p-6 flex-col items-center lg:items-start gap-3 border-b border-legal-800">
           <div className="flex items-center gap-3">
             <div className="bg-legal-800 p-2 rounded-lg border border-legal-700">
@@ -41,33 +41,59 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, tokenUsage
           <span className="hidden lg:block text-[10px] text-legal-400 uppercase tracking-widest font-medium">AI Partner in Family Court</span>
         </div>
         
-        {/* Mobile Hamburger Menu Button */}
-        <button className="md:hidden p-2 text-legal-400" onClick={() => setIsMobileMenuOpen(true)}>
-            <IconSet.Menu className="w-6 h-6" />
-        </button>
-
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex flex-col w-full h-auto items-center justify-start mt-8 px-2 lg:px-4 space-y-2">
+        <nav className="flex flex-row md:flex-col w-full h-full md:h-auto items-center justify-start md:justify-start px-2 md:mt-8 md:px-2 lg:px-4 md:space-y-2 overflow-x-auto md:overflow-visible hide-scrollbar gap-2 md:gap-0">
           {navItems.map((item) => {
             const isActive = currentView === item.id;
             return (
             <button
               key={item.id}
               onClick={() => onViewChange(item.id)}
-              className={`flex items-center justify-start gap-4 px-4 py-3 rounded-lg transition-all duration-200 w-full ${
+              className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-4 p-1 md:px-4 md:py-3 rounded-lg transition-all duration-200 min-w-[60px] md:min-w-0 md:w-full ${
                 isActive
-                  ? 'text-legal-50 bg-legal-800 shadow-sm border border-legal-700'
-                  : 'text-legal-400 hover:text-legal-100 hover:bg-legal-800/50'
+                  ? 'text-legal-50 md:bg-legal-800 md:shadow-sm md:border md:border-legal-700'
+                  : 'text-legal-400 hover:text-legal-100 md:hover:bg-legal-800/50'
               }`}
             >
-               <item.icon className={`w-5 h-5`} />
-               <span className={`text-xs uppercase tracking-widest font-medium ${isActive ? 'text-legal-50' : 'text-legal-400'} hidden lg:block`}>
+              <div className={`md:p-0 rounded-full transition-colors flex items-center justify-center ${isActive ? 'bg-legal-800 px-4 py-1 md:bg-transparent md:px-0 md:py-0' : 'p-1'}`}>
+                 <item.icon className={`w-5 h-5 md:w-5 md:h-5`} />
+              </div>
+              <span className={`text-[9px] md:text-xs uppercase tracking-widest font-medium ${isActive ? 'text-legal-50' : 'text-legal-400'} md:hidden lg:block`}>
                 {item.label}
               </span>
             </button>
           )})}
+          <div className="md:hidden flex items-center justify-center px-2">
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="bg-legal-800 p-3 rounded-full text-legal-50 border border-legal-700 shadow-lg"
+            >
+              <IconSet.Settings className="w-6 h-6" />
+            </button>
+          </div>
         </nav>
       </div>
+
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            className="md:hidden fixed bottom-0 left-0 w-full bg-legal-900 border-t border-legal-800 p-6 rounded-t-2xl z-40"
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-legal-50 font-serif font-bold">Settings & Actions</h3>
+              <button className="text-legal-400" onClick={() => setIsMenuOpen(false)}>Close</button>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+               {/* Add extra actions here if needed */}
+               <button onClick={onLogout} className="text-left text-legal-300 p-3 bg-legal-800 rounded-lg">Sign Out</button>
+               {canInstall && <button onClick={onInstall} className="text-left text-legal-300 p-3 bg-legal-800 rounded-lg">Install</button>}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="hidden md:block p-4 border-t border-legal-800 space-y-4">
         {/* Token Tracker */}
@@ -112,31 +138,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, tokenUsage
         </div>
       </div>
     </div>
-
-    {/* Mobile Menu Overlay */}
-    {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-legal-900 z-[100] p-6 flex flex-col">
-            <div className="flex justify-end mb-8">
-                <button onClick={() => setIsMobileMenuOpen(false)} className="text-legal-400">
-                    <IconSet.Settings className="w-8 h-8" /> {/* Reusing Settings Icon as close button for now, or X */}
-                </button>
-            </div>
-            <nav className="flex flex-col space-y-4">
-                {navItems.map(item => (
-                    <button key={item.id} onClick={() => { onViewChange(item.id); setIsMobileMenuOpen(false); }} className="text-2xl font-serif text-legal-50 py-4 border-b border-legal-800 flex items-center gap-4">
-                        <item.icon className="w-6 h-6" />
-                        {item.label}
-                    </button>
-                ))}
-            </nav>
-            <div className="mt-auto">
-                 <button onClick={onLogout} className="text-red-400 font-bold text-xl uppercase tracking-widest">Sign Out</button>
-            </div>
-        </div>
-    )}
-    </>
   );
 };
-
 
 export default Sidebar;
