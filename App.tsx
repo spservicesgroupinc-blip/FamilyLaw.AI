@@ -203,7 +203,7 @@ const ResearchTool: React.FC = () => {
 };
 
 // --- MOTION DRAFTER COMPONENT ---
-const MotionDrafter: React.FC<{ files: CaseFile[], userProfile: UserProfile | null }> = ({ files, userProfile }) => {
+const MotionDrafter: React.FC<{ files: CaseFile[], userProfile: UserProfile | null, session: UserSession, onUpload: (f: CaseFile) => void }> = ({ files, userProfile, session, onUpload }) => {
   const [topic, setTopic] = useState('');
   const [instructions, setInstructions] = useState('');
   const [draft, setDraft] = useState('');
@@ -216,8 +216,24 @@ const MotionDrafter: React.FC<{ files: CaseFile[], userProfile: UserProfile | nu
       const profileContext = userProfile ? `User Profile: Name: ${userProfile.name}, Address: ${userProfile.address}, Spouse: ${userProfile.spouseName}, Children: ${userProfile.children.map(c => `${c.name} (${c.age})`).join(', ')}. ` : '';
       const result = await geminiService.draftMotion(topic, files, profileContext + instructions);
       setDraft(result);
+      
+      // Save to cloud
+      const blob = new Blob([result], { type: 'text/markdown' });
+      const file = new File([blob], `${topic}.md`, { type: 'text/markdown' });
+      const uploadedFile = await api.uploadFile(session.tenantId, file);
+      
+      const newFile: CaseFile = {
+            id: uploadedFile.id,
+            name: uploadedFile.name,
+            type: uploadedFile.type,
+            content: "[Cloud File]",
+            dateAdded: uploadedFile.dateAdded,
+      };
+      onUpload(newFile);
+      alert("Motion saved to documents!");
     } catch (e) {
-      alert("Drafting failed.");
+      alert("Drafting or saving failed.");
+      console.error(e);
     } finally {
       setLoading(false);
     }
@@ -294,7 +310,7 @@ const MotionDrafter: React.FC<{ files: CaseFile[], userProfile: UserProfile | nu
                         Save PDF
                     </button>
                 </div>
-                <div id="motion-draft" className="pt-8 leading-loose font-serif text-lg text-legal-900">
+                <div id="motion-draft" className="pt-8 leading-[2.0] font-serif text-[12pt] text-legal-900 p-[1in]">
                     {draft}
                 </div>
             </div>
@@ -715,7 +731,14 @@ const App: React.FC = () => {
         {view === 'dashboard' && <Dashboard />}
         {view === 'assistant' && <Assistant files={files} userProfile={userProfile} session={session!} />}
         {view === 'research' && <ResearchTool />}
-        {view === 'drafting' && <MotionDrafter files={files} userProfile={userProfile} />}
+        {view === 'drafting' && (
+            <MotionDrafter 
+                files={files} 
+                userProfile={userProfile} 
+                session={session!} 
+                onUpload={(f) => setFiles([...files, f])}
+            />
+        )}
         {view === 'files' && (
             <FileManager 
                 files={files} 
