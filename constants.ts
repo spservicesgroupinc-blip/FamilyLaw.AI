@@ -1,4 +1,4 @@
-import { Gavel, Scale, FileText, MessageSquare, Search, Upload, Check, Download, Users, Settings } from 'lucide-react';
+import { Gavel, Scale, FileText, MessageSquare, Search, Upload, Check, Download, Users, Settings, Menu } from 'lucide-react';
 
 export const Icons = {
   Gavel,
@@ -10,5 +10,6 @@ export const Icons = {
   Check,
   Download,
   Users,
-  Settings
+  Settings,
+  Menu
 };

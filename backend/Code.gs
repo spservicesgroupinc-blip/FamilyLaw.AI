@@ -131,16 +131,30 @@ function handleGetProfile(payload) {
 }
 
 function handleUploadFile(payload) {
+  const folder = getStorageFolder();
+  const blob = Utilities.newBlob(Utilities.base64Decode(payload.base64Data), payload.mimeType, payload.name);
+  const file = folder.createFile(blob);
+  
   const sheet = getSheet('Files');
   const fileId = generateId();
   const dateAdded = new Date().getTime();
   
-  sheet.appendRow([payload.tenantId, fileId, payload.name, payload.mimeType, dateAdded, payload.base64Data]);
+  sheet.appendRow([payload.tenantId, fileId, payload.name, payload.mimeType, dateAdded, file.getId()]);
   
   return { 
     success: true, 
     file: { id: fileId, name: payload.name, type: payload.mimeType, dateAdded } 
   };
+}
+
+function getStorageFolder() {
+  const folderName = "FamilyLawFiles";
+  const folders = DriveApp.getFoldersByName(folderName);
+  if (folders.hasNext()) {
+    return folders.next();
+  } else {
+    return DriveApp.createFolder(folderName);
+  }
 }
 
 function handleGetFiles(payload) {
@@ -167,6 +181,13 @@ function handleDeleteFile(payload) {
   
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === payload.tenantId && data[i][1] === payload.fileId) {
+      // data[i][5] is the Drive file ID
+      const driveFileId = data[i][5];
+      try {
+        DriveApp.getFileById(driveFileId).setTrashed(true);
+      } catch (e) {
+        console.error("Could not delete from Drive: " + e);
+      }
       sheet.deleteRow(i + 1);
       return { success: true };
     }

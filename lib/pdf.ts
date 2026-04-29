@@ -5,7 +5,7 @@ export const generatePDF = (elementId: string, filename: string) => {
   if (!element) return;
   
   const opt = {
-    margin:       [0.5, 0.5, 0.5, 0.5], // Top, Left, Bottom, Right
+    margin:       1.0, // 1 inch margins for standard legal
     filename:     filename,
     image:        { type: 'jpeg' as const, quality: 1.0 },
     html2canvas:  { 
@@ -19,7 +19,7 @@ export const generatePDF = (elementId: string, filename: string) => {
         format: 'letter', 
         orientation: 'portrait' as const 
     },
-    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+    pagebreak:    { mode: ['css', 'legacy'] } // Removed avoid-all which can cause issues with pagination
   };
   
   html2pdf().set(opt).from(element).save();

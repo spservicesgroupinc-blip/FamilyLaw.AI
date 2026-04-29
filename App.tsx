@@ -294,7 +294,7 @@ const MotionDrafter: React.FC<{ files: CaseFile[], userProfile: UserProfile | nu
                         Save PDF
                     </button>
                 </div>
-                <div id="motion-draft" className="pt-8">
+                <div id="motion-draft" className="pt-8 leading-loose font-serif text-lg text-legal-900">
                     {draft}
                 </div>
             </div>
