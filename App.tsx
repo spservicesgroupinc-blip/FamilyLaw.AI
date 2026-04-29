@@ -310,8 +310,10 @@ const MotionDrafter: React.FC<{ files: CaseFile[], userProfile: UserProfile | nu
                         Save PDF
                     </button>
                 </div>
-                <div id="motion-draft" className="pt-8 leading-[2.0] font-serif text-[12pt] text-legal-900 p-[1in]">
-                    {draft}
+                <div id="motion-draft" className="pt-8 leading-[2.0] font-serif text-[12pt] text-legal-900 p-[1in] bg-white">
+                    {draft.split('\n\n').map((paragraph, index) => (
+                        <p key={index} className="para mb-4">{paragraph}</p>
+                    ))}
                 </div>
             </div>
         ) : (
