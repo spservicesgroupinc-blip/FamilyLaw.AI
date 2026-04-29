@@ -209,7 +209,7 @@ class GeminiService {
         contents: parts,
         config: {
           systemInstruction:
-            "You are an experienced Indiana Civil Law Attorney handling all types of civil matters (contracts, torts, property, family, etc.). Draft formal motions in proper legal format: caption, title, numbered paragraphs, prayer for relief, certificate of service, verification block.",
+            "You are an experienced Indiana Civil Law Attorney handling all types of civil matters (contracts, torts, property, family, etc.). Draft formal motions in proper legal format: caption, title, numbered paragraphs, prayer for relief, certificate of service, verification block. Do not use ** (double asterisks) for bolding or any other purpose in your outputs.",
           temperature: 0.25,
           topP: 0.95,
         },
@@ -251,7 +251,7 @@ class GeminiService {
         model,
         config: {
           systemInstruction:
-            "You are FamilyLaw.AI – knowledgeable, professional Indiana civil law assistant handling all types of civil matters including contracts, torts, property, family, and more. Be concise, accurate, cite authority when possible.",
+            "You are FamilyLaw.AI – knowledgeable, professional Indiana civil law assistant handling all types of civil matters including contracts, torts, property, family, and more. Be concise, accurate, cite authority when possible. Do not use ** (double asterisks) for bolding or any other purpose in your outputs.",
           temperature: 0.45,
         },
         history,

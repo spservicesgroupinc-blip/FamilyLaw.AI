@@ -11,52 +11,35 @@ import { generatePDF } from './lib/pdf';
 import { api, UserSession } from './services/api';
 
 // --- FILE MANAGER COMPONENT ---
-const FileManager: React.FC<{ files: CaseFile[]; onUpload: (f: CaseFile) => void; onDelete: (id: string) => void }> = ({ files, onUpload, onDelete }) => {
+const FileManager: React.FC<{ files: CaseFile[]; tenantId: string; onUpload: (f: CaseFile) => void; onDelete: (id: string) => void }> = ({ files, tenantId, onUpload, onDelete }) => {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    let content = "";
-    let inlineData = undefined;
-
-    // Handle Binary Files (PDF, Images)
-    if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
-        try {
-            const base64 = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const result = reader.result as string;
-                    // remove "data:application/pdf;base64," prefix
-                    const b64 = result.split(',')[1]; 
-                    resolve(b64);
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-            
-            content = `[Binary File: ${file.type}]`;
-            inlineData = {
-                mimeType: file.type,
-                data: base64
-            };
-        } catch (error) {
-            alert("Error reading file.");
-            return;
-        }
-    } else {
-        // Fallback for text-based files
-        content = await file.text();
+    try {
+        const uploadedFile = await api.uploadFile(tenantId, file);
+        const newFile: CaseFile = {
+            id: uploadedFile.id,
+            name: uploadedFile.name,
+            type: uploadedFile.type,
+            content: "[Cloud File]",
+            dateAdded: uploadedFile.dateAdded,
+        };
+        onUpload(newFile);
+    } catch (error) {
+        alert("Error uploading file.");
+        console.error(error);
     }
+  };
 
-    const newFile: CaseFile = {
-        id: Date.now().toString(),
-        name: file.name,
-        type: file.type,
-        content: content,
-        inlineData: inlineData,
-        dateAdded: Date.now(),
-    };
-    onUpload(newFile);
+  const handleDelete = async (id: string) => {
+      try {
+          await api.deleteFile(tenantId, id);
+          onDelete(id);
+      } catch (e) {
+          alert("Error deleting file.");
+          console.error(e);
+      }
   };
 
   return (
@@ -64,7 +47,7 @@ const FileManager: React.FC<{ files: CaseFile[]; onUpload: (f: CaseFile) => void
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 md:mb-8">
         <div>
             <h2 className="text-2xl md:text-3xl font-serif font-bold text-legal-900">Case Files</h2>
-            <p className="text-sm md:text-base text-legal-600 mt-1 md:mt-2">Upload motions, orders, and evidence (PDF, Text, Images). These files are saved locally and analyzed by AI.</p>
+            <p className="text-sm md:text-base text-legal-600 mt-1 md:mt-2">Upload motions, orders, and evidence (PDF, Text, Images). Files are saved to your account and accessible from any device.</p>
         </div>
         <label className="w-full sm:w-auto flex justify-center items-center gap-2 bg-legal-900 hover:bg-legal-800 text-legal-50 px-4 py-3 md:py-2 rounded-lg cursor-pointer transition shadow-sm border border-legal-800">
           <Icons.Upload className="w-4 h-4" />
@@ -92,7 +75,7 @@ const FileManager: React.FC<{ files: CaseFile[]; onUpload: (f: CaseFile) => void
                 <Icons.Document className="w-5 h-5" />
               </div>
               <button 
-                onClick={() => onDelete(file.id)} 
+                onClick={() => handleDelete(file.id)} 
                 className="text-legal-300 hover:text-red-600 transition-colors"
                 title="Delete File"
               >
@@ -104,14 +87,10 @@ const FileManager: React.FC<{ files: CaseFile[]; onUpload: (f: CaseFile) => void
             <h3 className="font-serif font-bold text-legal-900 truncate" title={file.name}>{file.name}</h3>
             <p className="text-xs text-legal-500 mt-1 uppercase tracking-wider">Added: {new Date(file.dateAdded).toLocaleDateString()}</p>
             <div className="mt-4 pt-4 border-t border-legal-100">
-               {file.inlineData ? (
-                   <div className="flex items-center gap-2 text-xs text-legal-700 bg-legal-50 p-2 rounded border border-legal-100">
-                       <span className="font-bold uppercase tracking-wider">{file.type.split('/')[1]} Document</span>
-                       <span className="text-legal-400">• Ready for AI</span>
-                   </div>
-               ) : (
-                   <p className="text-xs text-legal-500 line-clamp-3 font-mono bg-legal-50 p-2 rounded border border-legal-100 break-all">{file.content.substring(0, 150)}</p>
-               )}
+                <div className="flex items-center gap-2 text-xs text-legal-700 bg-legal-50 p-2 rounded border border-legal-100">
+                    <span className="font-bold uppercase tracking-wider">{file.type.split('/')[1]}</span>
+                    <span className="text-legal-400">• Saved to Cloud</span>
+                </div>
             </div>
           </div>
         ))}
@@ -332,7 +311,7 @@ const MotionDrafter: React.FC<{ files: CaseFile[], userProfile: UserProfile | nu
 };
 
 // --- ASSISTANT (CHAT) COMPONENT ---
-const Assistant: React.FC<{ files: CaseFile[], userProfile: UserProfile | null }> = ({ files, userProfile }) => {
+const Assistant: React.FC<{ files: CaseFile[], userProfile: UserProfile | null, session: UserSession }> = ({ files, userProfile, session }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([
         { id: '1', role: 'model', text: `Hello. I am FamilyLaw.AI, your AI Partner in Family Court. I can help you understand statutes, analyze your case files, or plan your legal strategy. ${userProfile ? `I see you are ${userProfile.name}, and I can help you with your case involving your spouse, ${userProfile.spouseName}.` : ''} How can I help you today?`, timestamp: Date.now() }
     ]);
@@ -366,6 +345,16 @@ const Assistant: React.FC<{ files: CaseFile[], userProfile: UserProfile | null }
         }
     };
 
+    const handleSave = async () => {
+        try {
+            const title = messages[messages.length - 1].text.substring(0, 30) + "...";
+            await api.saveChat(session.tenantId, title, messages);
+            alert("Chat saved successfully!");
+        } catch(e) {
+            alert("Failed to save chat.");
+        }
+    };
+
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, thinking]);
@@ -374,14 +363,22 @@ const Assistant: React.FC<{ files: CaseFile[], userProfile: UserProfile | null }
         <div className="flex flex-col h-full bg-legal-50 relative">
             <div className="flex justify-between items-center p-3 md:p-4 border-b border-legal-200 bg-white">
                 <h2 className="text-lg md:text-xl font-serif font-bold text-legal-900">AI Assistant</h2>
-                <button 
-                    onClick={() => generatePDF('chat-history', 'Chat_History.pdf')}
-                    className="flex items-center gap-1 md:gap-2 bg-legal-100 hover:bg-legal-200 text-legal-800 px-2 py-1.5 md:px-3 rounded font-medium transition-colors border border-legal-200 text-[10px] md:text-xs uppercase tracking-wider"
-                >
-                    <Icons.Download className="w-3 h-3" />
-                    <span className="hidden sm:inline">Save Chat PDF</span>
-                    <span className="sm:hidden">Save</span>
-                </button>
+                <div className="flex gap-2">
+                    <button 
+                        onClick={handleSave}
+                        className="flex items-center gap-1 md:gap-2 bg-legal-900 text-legal-50 px-2 py-1.5 md:px-3 rounded font-medium transition-colors border border-legal-800 text-[10px] md:text-xs uppercase tracking-wider"
+                    >
+                        Save Chat
+                    </button>
+                    <button 
+                        onClick={() => generatePDF('chat-history', 'Chat_History.pdf')}
+                        className="flex items-center gap-1 md:gap-2 bg-legal-100 hover:bg-legal-200 text-legal-800 px-2 py-1.5 md:px-3 rounded font-medium transition-colors border border-legal-200 text-[10px] md:text-xs uppercase tracking-wider"
+                    >
+                        <Icons.Download className="w-3 h-3" />
+                        <span className="hidden sm:inline">Save Chat PDF</span>
+                        <span className="sm:hidden">Save</span>
+                    </button>
+                </div>
             </div>
             <div id="chat-history" className="flex-1 overflow-y-auto p-3 md:p-8 space-y-4 md:space-y-6">
                 {messages.map(msg => (
@@ -716,12 +713,13 @@ const App: React.FC = () => {
       
       <main className="flex-1 h-full overflow-hidden relative pt-safe">
         {view === 'dashboard' && <Dashboard />}
-        {view === 'assistant' && <Assistant files={files} userProfile={userProfile} />}
+        {view === 'assistant' && <Assistant files={files} userProfile={userProfile} session={session!} />}
         {view === 'research' && <ResearchTool />}
         {view === 'drafting' && <MotionDrafter files={files} userProfile={userProfile} />}
         {view === 'files' && (
             <FileManager 
                 files={files} 
+                tenantId={session!.tenantId}
                 onUpload={(f) => setFiles([...files, f])} 
                 onDelete={(id) => setFiles(files.filter(f => f.id !== id))} 
             />

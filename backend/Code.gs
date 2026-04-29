@@ -6,7 +6,7 @@ function setup() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   
   // Create sheets if they don't exist
-  const sheets = ['Users', 'Profiles', 'Files', 'Research'];
+  const sheets = ['Users', 'Profiles', 'Files', 'Research', 'Chats'];
   sheets.forEach(name => {
     if (!ss.getSheetByName(name)) {
       ss.insertSheet(name);
@@ -14,6 +14,7 @@ function setup() {
       if (name === 'Profiles') ss.getSheetByName(name).appendRow(['tenantId', 'profileData']);
       if (name === 'Files') ss.getSheetByName(name).appendRow(['tenantId', 'fileId', 'name', 'mimeType', 'dateAdded', 'base64Data']);
       if (name === 'Research') ss.getSheetByName(name).appendRow(['tenantId', 'query', 'answer', 'timestamp']);
+      if (name === 'Chats') ss.getSheetByName(name).appendRow(['tenantId', 'chatId', 'title', 'messages', 'timestamp']);
     }
   });
 }
@@ -42,6 +43,10 @@ function doPost(e) {
       result = handleSaveResearch(payload);
     } else if (action === 'getResearch') {
       result = handleGetResearch(payload);
+    } else if (action === 'saveChat') {
+      result = handleSaveChat(payload);
+    } else if (action === 'getChats') {
+      result = handleGetChats(payload);
     }
 
     return ContentService.createTextOutput(JSON.stringify(result))
@@ -190,4 +195,29 @@ function handleGetResearch(payload) {
     }
   }
   return { success: true, research };
+}
+
+function handleSaveChat(payload) {
+  const sheet = getSheet('Chats');
+  const chatId = generateId();
+  sheet.appendRow([payload.tenantId, chatId, payload.title, JSON.stringify(payload.messages), new Date().getTime()]);
+  return { success: true, chatId };
+}
+
+function handleGetChats(payload) {
+  const sheet = getSheet('Chats');
+  const data = sheet.getDataRange().getValues();
+  const chats = [];
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === payload.tenantId) {
+      chats.push({
+        id: data[i][1],
+        title: data[i][2],
+        messagesJSON: data[i][3],
+        timestamp: data[i][4]
+      });
+    }
+  }
+  return { success: true, chats };
 }

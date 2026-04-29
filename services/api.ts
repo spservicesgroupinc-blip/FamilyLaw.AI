@@ -90,6 +90,19 @@ class ApiService {
     return res.research;
   }
 
+  async saveChat(tenantId: string, title: string, messages: any[]): Promise<string> {
+    const res = await this.callGas('saveChat', { tenantId, title, messages });
+    return res.chatId;
+  }
+
+  async getChats(tenantId: string): Promise<any[]> {
+    const res = await this.callGas('getChats', { tenantId });
+    return res.chats.map((c: any) => ({
+        ...c,
+        messages: JSON.parse(c.messagesJSON)
+    }));
+  }
+
   async saveProfile(tenantId: string, profile: any): Promise<void> {
     await this.callGas('saveProfile', { tenantId, profile });
   }
