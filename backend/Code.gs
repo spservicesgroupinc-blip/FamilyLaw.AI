@@ -168,7 +168,8 @@ function handleGetFiles(payload) {
         id: data[i][1],
         name: data[i][2],
         type: data[i][3],
-        dateAdded: data[i][4]
+        dateAdded: data[i][4],
+        driveFileId: data[i][5]
       });
     }
   }
