@@ -67,7 +67,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, tokenUsage
         <div className="bg-legal-800/50 rounded-lg p-3 hidden lg:block border border-legal-800">
             <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-semibold text-legal-400 uppercase tracking-wider">Session Usage</span>
-                <span className="text-xs font-mono text-legal-200">{formatTokens(tokenUsage)} toks</span>
+                <div className="flex flex-col items-end">
+                  <span className="text-xs font-mono text-legal-200">{formatTokens(tokenUsage)} toks</span>
+                  <span className="text-[10px] font-mono text-legal-400">${((tokenUsage / 1000000) * 0.075).toFixed(4)}</span>
+                </div>
             </div>
             <div className="h-1 bg-legal-900 rounded-full w-full overflow-hidden">
                 <div 
