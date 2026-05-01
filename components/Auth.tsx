@@ -37,6 +37,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onSignUpClick }) => {
         <h2 className="mt-2 text-3xl font-extrabold text-legal-900 font-serif">
           FamilyLaw.AI
         </h2>
+        <div className="text-[10px] uppercase tracking-widest font-bold text-legal-500 mt-1 mb-2">An R2 Technologies Project</div>
         <p className="mt-2 text-sm text-legal-600 uppercase tracking-widest font-bold">
           Sign in to your account
         </p>

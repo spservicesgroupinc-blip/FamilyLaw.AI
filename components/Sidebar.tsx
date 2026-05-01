@@ -45,7 +45,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, tokenUsage
             </div>
             <span className="text-2xl font-serif font-bold hidden lg:block tracking-wide text-legal-50">FamilyLaw.AI</span>
           </div>
-          <span className="hidden lg:block text-[10px] text-legal-400 uppercase tracking-widest font-medium">AI Partner in Family Court</span>
+          <div className="flex flex-col gap-1 items-start w-full">
+            <span className="hidden lg:block text-[10px] text-legal-400 uppercase tracking-widest font-medium">AI Partner in Family Court</span>
+            <span className="hidden lg:block text-[8px] text-legal-500 uppercase tracking-widest font-bold">An R2 Technologies Project</span>
+          </div>
         </div>
         
         {/* Desktop Navigation */}

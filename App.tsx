@@ -317,7 +317,7 @@ const MotionDrafter: React.FC<{ files: CaseFile[], userProfile: UserProfile | nu
                         Copy Text
                     </button>
                     <button 
-                        onClick={() => generatePDF('motion-draft', 'Drafted_Motion.pdf')}
+                        onClick={() => generatePDF('motion-draft', 'Drafted_Motion.pdf', draftData)}
                         className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold bg-legal-100 hover:bg-legal-200 px-3 py-2 rounded text-legal-700 transition-colors"
                     >
                         <Icons.Download className="w-3 h-3" />
@@ -719,6 +719,7 @@ const App: React.FC = () => {
       <div className="flex justify-between items-start mb-6 md:mb-10">
         <div>
           <h1 className="text-3xl md:text-4xl font-serif font-bold text-legal-900 mb-1 md:mb-2">Welcome to FamilyLaw.AI</h1>
+          <div className="text-[10px] md:text-xs text-legal-500 uppercase tracking-widest font-bold mb-1">An R2 Technologies Project</div>
           <p className="text-sm md:text-lg text-legal-600">Your AI Partner in Family Court.</p>
         </div>
         {!!deferredPrompt && (
