@@ -50,8 +50,8 @@
       .legal-scroll::-webkit-scrollbar-thumb:hover {
         background: #555;
       }
-      .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-      .pt-safe { padding-top: env(safe-area-inset-top); }
+      .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+      .pt-safe { padding-top: max(1rem, env(safe-area-inset-top)); }
       .hide-scrollbar::-webkit-scrollbar {
         display: none;
       }

@@ -1,4 +1,4 @@
-import { GoogleGenAI, GenerateContentResponse, Part, Tool } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse, Part, Type, Tool } from "@google/genai";
 import { CaseFile } from '../types';
 
 const MODELS = {
@@ -6,6 +6,26 @@ const MODELS = {
   fast:      "gemini-3-flash-preview",   // quicker, good fallback
   // You can add gemini-3-pro, gemini-2.5-pro-exp, etc. later
 } as const;
+
+export interface MotionDraftJSON {
+  caption: string;
+  court: string;
+  county: string;
+  case_no: string;
+  document_title: string;
+  paragraphs: string[];
+  prayer_for_relief: string;
+  attorney_name: string;
+  attorney_bar_no: string;
+  attorney_firm: string;
+  attorney_address: string;
+  attorney_address2: string;
+  attorney_phone: string;
+  attorney_email: string;
+  representing: string;
+  verification?: string;
+  certificate_of_service: string;
+}
 
 class GeminiService {
   private ai: GoogleGenAI;
@@ -209,9 +229,33 @@ class GeminiService {
         contents: parts,
         config: {
           systemInstruction:
-            "You are an experienced Indiana Civil Law Attorney handling all types of civil matters (contracts, torts, property, family, etc.). Draft formal motions in proper legal format: caption, title, numbered paragraphs, prayer for relief, certificate of service, verification block. Do not use ** (double asterisks) for bolding or any other purpose in your outputs.",
+            "You are an experienced Indiana Civil Law Attorney handling all types of civil matters (contracts, torts, property, family, etc.). Draft formal motions in proper legal format for Indiana Courts. Extract or mock case information, caption, court, etc as realistically as possible based on the provided facts.",
           temperature: 0.25,
           topP: 0.95,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              caption: { type: Type.STRING, description: "Case caption (e.g., IN RE THE MARRIAGE OF: ...)" },
+              court: { type: Type.STRING, description: "Court name (e.g., IN THE SUPERIOR COURT OF INDIANA)" },
+              county: { type: Type.STRING, description: "County name (uppercase, e.g., MARION)" },
+              case_no: { type: Type.STRING, description: "Case number" },
+              document_title: { type: Type.STRING, description: "Title of the motion (e.g., VERIFIED MOTION TO MODIFY...)" },
+              paragraphs: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Body paragraphs. Do not number them yourself, the UI will number them." },
+              prayer_for_relief: { type: Type.STRING, description: "WHEREFORE clause" },
+              attorney_name: { type: Type.STRING },
+              attorney_bar_no: { type: Type.STRING },
+              attorney_firm: { type: Type.STRING },
+              attorney_address: { type: Type.STRING },
+              attorney_address2: { type: Type.STRING },
+              attorney_phone: { type: Type.STRING },
+              attorney_email: { type: Type.STRING },
+              representing: { type: Type.STRING },
+              verification: { type: Type.STRING, description: "Optional verification block text" },
+              certificate_of_service: { type: Type.STRING }
+            },
+            required: ["caption", "court", "county", "case_no", "document_title", "paragraphs", "prayer_for_relief", "attorney_name", "attorney_bar_no", "attorney_firm", "attorney_address", "attorney_address2", "attorney_phone", "attorney_email", "representing", "certificate_of_service"]
+          }
         },
       });
 

@@ -206,7 +206,7 @@ const ResearchTool: React.FC = () => {
 const MotionDrafter: React.FC<{ files: CaseFile[], userProfile: UserProfile | null, session: UserSession, onUpload: (f: CaseFile) => void }> = ({ files, userProfile, session, onUpload }) => {
   const [topic, setTopic] = useState('');
   const [instructions, setInstructions] = useState('');
-  const [draft, setDraft] = useState('');
+  const [draftData, setDraftData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   const handleDraft = async () => {
@@ -215,10 +215,22 @@ const MotionDrafter: React.FC<{ files: CaseFile[], userProfile: UserProfile | nu
     try {
       const profileContext = userProfile ? `User Profile: Name: ${userProfile.name}, Address: ${userProfile.address}, Spouse: ${userProfile.spouseName}, Children: ${userProfile.children.map(c => `${c.name} (${c.age})`).join(', ')}. ` : '';
       const result = await geminiService.draftMotion(topic, files, profileContext + instructions);
-      setDraft(result);
       
-      // Save to cloud
-      const blob = new Blob([result], { type: 'text/markdown' });
+      let parsed;
+      try {
+        parsed = JSON.parse(result);
+      } catch (e) {
+        console.error("Failed to parse JSON motion", e);
+        // Fallback or retry
+        alert("Received invalid format from AI.");
+        return;
+      }
+      setDraftData(parsed);
+      
+      // Save to cloud as Markdown/Text
+      const docText = `${parsed.caption}\n${parsed.court}\n${parsed.county} COUNTY\nCAUSE NO. ${parsed.case_no}\n\n${parsed.document_title}\n\n${parsed.paragraphs?.join('\n\n')}\n\n${parsed.prayer_for_relief}\n\n${parsed.verification || ''}\n\n${parsed.certificate_of_service}\n\n${parsed.attorney_name}\n${parsed.attorney_firm}`;
+      
+      const blob = new Blob([docText], { type: 'text/markdown' });
       const file = new File([blob], `${topic}.md`, { type: 'text/markdown' });
       const uploadedFile = await api.uploadFile(session.tenantId, file);
       
@@ -240,7 +252,9 @@ const MotionDrafter: React.FC<{ files: CaseFile[], userProfile: UserProfile | nu
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(draft);
+    if (!draftData) return;
+    const docText = `${draftData.caption}\n${draftData.court}\n${draftData.county} COUNTY\nCAUSE NO. ${draftData.case_no}\n\n${draftData.document_title}\n\n${draftData.paragraphs?.join('\n\n')}\n\n${draftData.prayer_for_relief}\n\n${draftData.verification || ''}\n\n${draftData.certificate_of_service}\n\n${draftData.attorney_name}\n${draftData.attorney_firm}`;
+    navigator.clipboard.writeText(docText);
     alert("Copied to clipboard!");
   };
 
@@ -293,8 +307,8 @@ const MotionDrafter: React.FC<{ files: CaseFile[], userProfile: UserProfile | nu
 
       {/* Editor/Preview */}
       <div className="w-full md:w-2/3 p-4 md:p-8 bg-white md:overflow-y-auto legal-scroll relative min-h-[500px] md:min-h-0">
-        {draft ? (
-            <div className="max-w-3xl mx-auto shadow-sm border border-legal-200 p-6 md:p-12 min-h-[800px] font-serif leading-relaxed text-legal-900 whitespace-pre-wrap bg-white relative text-sm md:text-base">
+        {draftData ? (
+            <div className="max-w-3xl mx-auto shadow-sm border border-legal-200 p-6 md:p-12 min-h-[800px] bg-white relative text-sm md:text-base">
                 <div className="absolute top-4 right-4 flex gap-2">
                     <button 
                         onClick={handleCopy}
@@ -310,10 +324,60 @@ const MotionDrafter: React.FC<{ files: CaseFile[], userProfile: UserProfile | nu
                         Save PDF
                     </button>
                 </div>
-                <div id="motion-draft" className="pt-8 leading-[2.0] font-serif text-[12pt] text-legal-900 p-[1in] bg-white">
-                    {draft.split('\n\n').map((paragraph, index) => (
-                        <p key={index} className="para mb-4">{paragraph}</p>
-                    ))}
+                
+                {/* PDF Output Container - Uses specific classes from PDF script */}
+                <div id="motion-draft" className="bg-white text-black font-serif leading-[2.0] text-[12pt] p-0 md:p-[1in]">
+                    <div className="text-center mb-[0.5in]">
+                        <div className="text-center mb-[0.25in] whitespace-pre-line">{draftData.caption}</div>
+                        <div className="mt-[0.15in]">
+                            {draftData.court}<br/>
+                            {draftData.county} COUNTY, INDIANA<br/>
+                            CAUSE NO. {draftData.case_no}
+                        </div>
+                    </div>
+
+                    <div className="text-center font-bold text-[13pt] my-[0.5in] uppercase underline">
+                        {draftData.document_title}
+                    </div>
+
+                    <div className="text-justify">
+                        {draftData.paragraphs?.map((paragraph: string, index: number) => (
+                            <p key={index} className="para mb-0 ml-[0.5in] -indent-[0.5in]">
+                                <span className="inline-block w-[0.5in] -ml-[0.5in]">{index + 1}.</span> {paragraph}
+                            </p>
+                        ))}
+                    </div>
+                    
+                    <div className="text-justify mt-[0.5in] ml-[0.5in]">
+                        <p>{draftData.prayer_for_relief}</p>
+                    </div>
+
+                    {draftData.verification && (
+                        <div className="mt-[0.5in]">
+                            <p className="indent-[0.5in] text-justify">{draftData.verification}</p>
+                        </div>
+                    )}
+
+                    <div className="mt-[1in] break-inside-avoid leading-normal">
+                        <div className="border-t border-black w-[3in] mt-[0.4in] mb-[0.15in]"></div>
+                        <div>{draftData.attorney_name}</div>
+                        <div>Bar No. {draftData.attorney_bar_no}</div>
+                        <div>{draftData.attorney_firm}</div>
+                        <div>{draftData.attorney_address}</div>
+                        <div>{draftData.attorney_address2}</div>
+                        <div>Tel: {draftData.attorney_phone}</div>
+                        <div>Email: {draftData.attorney_email}</div>
+                        <div className="mt-[0.2in]">Attorney for {draftData.representing}</div>
+                    </div>
+                    
+                    {draftData.certificate_of_service && (
+                        <div className="mt-[1in] break-inside-avoid leading-normal">
+                            <div className="font-bold mb-[0.2in] uppercase underline">Certificate of Service</div>
+                            <p className="text-justify">{draftData.certificate_of_service}</p>
+                            <div className="border-t border-black w-[3in] mt-[0.4in] mb-[0.15in]"></div>
+                            <div>{draftData.attorney_name}</div>
+                        </div>
+                    )}
                 </div>
             </div>
         ) : (

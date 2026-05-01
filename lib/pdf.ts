@@ -5,7 +5,7 @@ export const generatePDF = (elementId: string, filename: string) => {
   if (!element) return;
   
   const opt = {
-    margin:       [1, 1, 1, 1], // 1 inch margins all around
+    margin:       [1, 1, 1, 1] as [number, number, number, number], // 1 inch margins all around
     filename:     filename,
     image:        { type: 'jpeg' as const, quality: 1.0 },
     html2canvas:  { 
